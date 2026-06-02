@@ -2,8 +2,8 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy only package.json (NOT package-lock.json) to force fresh install
+COPY package.json ./
 
 # Install dependencies
 RUN npm install

@@ -29,6 +29,15 @@ export function formatDate(date: Date): string {
 }
 
 /**
+ * Get today's date as YYYY-MM-DD string for use in HTML date input max/min attributes
+ * This ensures we're using local timezone, not UTC
+ */
+export function getTodayString(): string {
+  const today = new Date();
+  return formatDate(today);
+}
+
+/**
  * Get days in month
  */
 export function getDaysInMonth(year: number, month: number): number {

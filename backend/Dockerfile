@@ -12,6 +12,9 @@ RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y build-essential ca-certificates default-mysql-client default-libmysqlclient-dev git libyaml-dev dos2unix && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
+# Configure Git to use LF line endings
+RUN git config --global core.eol lf && git config --global core.autocrlf false
+
 # Install application gems
 COPY Gemfile Gemfile.lock ./
 

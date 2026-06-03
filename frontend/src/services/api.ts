@@ -3,6 +3,7 @@
  */
 
 import { Category, Expense, ExpenseFormData } from "../types";
+import { formatDate } from "../utils/expenseUtils";
 
 const API_BASE_URL = "http://localhost:3000/api";
 
@@ -78,6 +79,7 @@ export async function createExpense(data: ExpenseFormData): Promise<Expense> {
     amount: data.amount,
     category_id: category?.id,
     date: data.date,
+    client_date: formatDate(new Date()),
   };
 
   const response = await fetch(`${API_BASE_URL}/expenses`, {
@@ -107,7 +109,12 @@ export async function updateExpense(
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ expense: data }),
+    body: JSON.stringify({
+      expense: {
+        ...data,
+        client_date: formatDate(new Date()),
+      },
+    }),
   });
 
   if (!response.ok) {

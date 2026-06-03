@@ -4,6 +4,8 @@ import {
   createExpense,
   fetchCategories,
   createCategory,
+  updateCategory,
+  deleteCategory,
 } from "../services/api";
 import { Category, Expense, ExpenseFormData } from "../types";
 import YearNavigation from "../components/YearNavigation";
@@ -23,6 +25,14 @@ const HistoryPage: React.FC = () => {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(
+    null,
+  );
+  const [editingCategoryName, setEditingCategoryName] = useState("");
+  const [categoryActionError, setCategoryActionError] = useState<string | null>(
+    null,
+  );
+  const [categoryActionLoading, setCategoryActionLoading] = useState(false);
 
   // Get year and month from URL params, default to current date if not provided
   const getInitialYearMonth = () => {
@@ -102,6 +112,16 @@ const HistoryPage: React.FC = () => {
     }
   };
 
+  const closeCategoryModal = () => {
+    setIsCategoryModalOpen(false);
+    setNewCategoryName("");
+    setCategoryError(null);
+    setCategoryActionError(null);
+    setEditingCategoryId(null);
+    setEditingCategoryName("");
+    setCategoryActionLoading(false);
+  };
+
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) {
       setCategoryError("Category name is required");
@@ -113,8 +133,7 @@ const HistoryPage: React.FC = () => {
 
     try {
       await createCategory(newCategoryName.trim());
-      setNewCategoryName("");
-      setIsCategoryModalOpen(false);
+      closeCategoryModal();
       await loadCategoryList();
     } catch (error) {
       console.error("Error creating category:", error);
@@ -125,6 +144,66 @@ const HistoryPage: React.FC = () => {
       }
     } finally {
       setIsCategorySubmitting(false);
+    }
+  };
+
+  const handleStartEditCategory = (category: Category) => {
+    setCategoryActionError(null);
+    setEditingCategoryId(category.id);
+    setEditingCategoryName(category.name);
+  };
+
+  const handleCancelEditCategory = () => {
+    setEditingCategoryId(null);
+    setEditingCategoryName("");
+    setCategoryActionError(null);
+  };
+
+  const handleRenameCategory = async () => {
+    if (!editingCategoryId) {
+      return;
+    }
+
+    if (!editingCategoryName.trim()) {
+      setCategoryActionError("Category name is required");
+      return;
+    }
+
+    setCategoryActionError(null);
+    setCategoryActionLoading(true);
+
+    try {
+      await updateCategory(editingCategoryId, editingCategoryName.trim());
+      await loadCategoryList();
+      handleCancelEditCategory();
+    } catch (error) {
+      console.error("Error updating category:", error);
+      setCategoryActionError(
+        error instanceof Error ? error.message : "Failed to update category",
+      );
+    } finally {
+      setCategoryActionLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (category: Category) => {
+    if (!window.confirm(`Delete category "${category.name}"?`)) {
+      return;
+    }
+
+    setCategoryActionError(null);
+    setCategoryActionLoading(true);
+
+    try {
+      await deleteCategory(category.id);
+      await loadCategoryList();
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      setCategoryActionError(
+        error instanceof Error ? error.message : "Failed to delete category",
+      );
+    } finally {
+      setCategoryActionLoading(false);
     }
   };
 
@@ -235,43 +314,164 @@ const HistoryPage: React.FC = () => {
 
       <Modal
         isOpen={isCategoryModalOpen}
-        onClose={() => setIsCategoryModalOpen(false)}
-        title="Add New Category"
+        onClose={closeCategoryModal}
+        title="Add or Manage Categories"
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <TextField
-            label="Category Name"
-            type="text"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            error={categoryError || undefined}
-            fullWidth
-            required
-          />
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
+        >
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+          >
+            <TextField
+              label="Category Name"
+              type="text"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              error={categoryError || undefined}
+              fullWidth
+              required
+            />
+
+            <div
+              style={{
+                display: "flex",
+                gap: "0.5rem",
+                justifyContent: "flex-end",
+              }}
+            >
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={closeCategoryModal}
+                disabled={isCategorySubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={handleAddCategory}
+                disabled={isCategorySubmitting}
+              >
+                {isCategorySubmitting ? "Saving..." : "Create Category"}
+              </Button>
+            </div>
+          </div>
+
+          {categoryActionError && (
+            <div style={{ color: COLORS.danger, marginTop: "0.5rem" }}>
+              {categoryActionError}
+            </div>
+          )}
 
           <div
             style={{
               display: "flex",
-              gap: "0.5rem",
-              justifyContent: "flex-end",
+              flexDirection: "column",
+              gap: "0.75rem",
+              backgroundColor: COLORS.background.card,
+              padding: "1rem",
+              borderRadius: "0.75rem",
             }}
           >
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsCategoryModalOpen(false)}
-              disabled={isCategorySubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              onClick={handleAddCategory}
-              disabled={isCategorySubmitting}
-            >
-              {isCategorySubmitting ? "Saving..." : "Create Category"}
-            </Button>
+            <div style={{ fontWeight: 600, color: COLORS.text.primary }}>
+              Existing Categories
+            </div>
+            {categoryList.length === 0 ? (
+              <div style={{ color: COLORS.text.secondary }}>
+                No categories available.
+              </div>
+            ) : (
+              categoryList.map((category) => (
+                <div
+                  key={category.id}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem",
+                    padding: "0.75rem",
+                    backgroundColor: COLORS.background.main,
+                    borderRadius: "0.5rem",
+                  }}
+                >
+                  {editingCategoryId === category.id ? (
+                    <>
+                      <TextField
+                        label="Rename category"
+                        type="text"
+                        value={editingCategoryName}
+                        onChange={(e) => setEditingCategoryName(e.target.value)}
+                        error={categoryActionError || undefined}
+                        fullWidth
+                        required
+                      />
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "0.5rem",
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={handleCancelEditCategory}
+                          disabled={categoryActionLoading}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="primary"
+                          onClick={handleRenameCategory}
+                          disabled={categoryActionLoading}
+                        >
+                          {categoryActionLoading ? "Saving..." : "Save"}
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "0.75rem",
+                      }}
+                    >
+                      <span style={{ color: COLORS.text.primary }}>
+                        {category.name}
+                      </span>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="small"
+                          onClick={() => handleStartEditCategory(category)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="small"
+                          onClick={() => handleDeleteCategory(category)}
+                          disabled={categoryActionLoading}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
       </Modal>

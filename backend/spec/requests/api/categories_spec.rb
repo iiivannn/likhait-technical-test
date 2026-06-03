@@ -51,4 +51,48 @@ RSpec.describe "Api::Categories", type: :request do
       expect(json["errors"]).to include("Name has already been taken")
     end
   end
+
+  describe "PATCH /api/categories/:id" do
+    let!(:category) { Category.create!(name: "Bills") }
+
+    it "renames a category" do
+      patch "/api/categories/#{category.id}", params: { category: { name: "Utilities" } }
+
+      expect(response).to have_http_status(:success)
+      json = JSON.parse(response.body)
+      expect(json["name"]).to eq("Utilities")
+      expect(category.reload.name).to eq("Utilities")
+    end
+
+    it "returns errors for invalid category name" do
+      patch "/api/categories/#{category.id}", params: { category: { name: "" } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      json = JSON.parse(response.body)
+      expect(json["errors"]).to include("Name can't be blank")
+    end
+  end
+
+  describe "DELETE /api/categories/:id" do
+    it "deletes a category with no linked expenses" do
+      category = Category.create!(name: "Subscriptions")
+
+      delete "/api/categories/#{category.id}"
+
+      expect(response).to have_http_status(:no_content)
+      expect(Category.find_by(id: category.id)).to be_nil
+    end
+
+    it "returns error when category has linked expenses" do
+      category = Category.create!(name: "Groceries")
+      Expense.create!(description: "Lunch", amount: 20.0, category: category, date: Date.today)
+
+      delete "/api/categories/#{category.id}"
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      json = JSON.parse(response.body)
+      expect(json["errors"]).to include("Cannot delete category with linked expenses")
+      expect(Category.find_by(id: category.id)).not_to be_nil
+    end
+  end
 end

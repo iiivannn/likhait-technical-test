@@ -10,6 +10,10 @@ RSpec.configure do |config|
     host! 'localhost'
   end
 
+  config.before(:each, type: :model) do
+    DatabaseCleaner.start
+  end
+
   config.before(:each, type: :controller) do
     DatabaseCleaner.start
   end

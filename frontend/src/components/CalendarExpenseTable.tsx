@@ -84,7 +84,7 @@ export function CalendarExpenseTable({
 
   const thStyle: React.CSSProperties = {
     padding: "0.75rem",
-    textAlign: "left",
+    textAlign: "center",
     fontWeight: 600,
     color: COLORS.text.primary,
     borderBottom: `2px solid ${COLORS.border}`,
@@ -94,6 +94,7 @@ export function CalendarExpenseTable({
     padding: "0.75rem",
     borderBottom: `1px solid ${COLORS.border}`,
     color: COLORS.text.primary,
+    textAlign: "center",
   };
 
   const emptyStyle: React.CSSProperties = {
@@ -105,6 +106,8 @@ export function CalendarExpenseTable({
   const actionButtonsStyle: React.CSSProperties = {
     display: "flex",
     gap: "0.5rem",
+    alignItems: "center",
+    justifyContent: "center",
   };
 
   if (expenses.length === 0) {
@@ -139,6 +142,7 @@ export function CalendarExpenseTable({
                   style={{
                     display: "flex",
                     alignItems: "center",
+                    justifyContent: "center",
                     gap: "0.5rem",
                   }}
                 >
@@ -146,7 +150,7 @@ export function CalendarExpenseTable({
                   <span>{expense.category}</span>
                 </span>
               </td>
-              <td style={{ ...tdStyle, textAlign: "left", fontWeight: 600 }}>
+              <td style={{ ...tdStyle, textAlign: "center", fontWeight: 600 }}>
                 {formatCurrency(expense.amount)}
               </td>
               <td style={{ ...tdStyle, textAlign: "center" }}>

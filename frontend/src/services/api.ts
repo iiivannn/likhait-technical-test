@@ -66,6 +66,39 @@ export async function createCategory(name: string): Promise<Category> {
   return response.json();
 }
 
+export async function updateCategory(
+  id: number,
+  name: string,
+): Promise<Category> {
+  const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ category: { name } }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}));
+    const message = errorBody.errors?.join(", ") || "Failed to update category";
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function deleteCategory(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}));
+    const message = errorBody.errors?.join(", ") || "Failed to delete category";
+    throw new Error(message);
+  }
+}
+
 /**
  * Create a new expense
  */
